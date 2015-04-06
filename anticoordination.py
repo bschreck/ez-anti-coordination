@@ -7,11 +7,13 @@ class Agent(object):
             self.strategy[signal] = random.randint(0,c-1)
         self.c = c
 
-    def updateStrategy(self, k_t, observation):
+    def updateStrategy(self, k_t, observation, t):
+        #possible heuristic: alter p over time based on t
+        #self.p += .001
         channel_busy, channel = observation
         if self.strategy[k_t] > -1:
             if channel_busy:
-                print "channel_busy:", channel_busy
+                #print "channel_busy:", channel_busy
                 if random.random() < self.p:
                     self.strategy[k_t] = -1
                 else:
@@ -67,27 +69,51 @@ class Simulator(object):
             if strategy > -1:
                 self.channels[strategy].transmit()
         successful_channels = [i for i,channel in enumerate(self.channels) if channel.count == 1]
-        print "successful_channels:", successful_channels
+        #print "successful_channels:", successful_channels
+
+
         empty_channels = [i for i,channel in enumerate(self.channels) if channel.count == 0]
-        print "empty channels:", empty_channels
+        #print "empty channels:", empty_channels
         for agent in self.agents:
             if agent.strategy[k_t] > -1:
                 channel_busy = agent.strategy[k_t] not in successful_channels
-                agent.updateStrategy(k_t, (channel_busy, agent.strategy[k_t]))
+                agent.updateStrategy(k_t, (channel_busy, agent.strategy[k_t]),t)
             else:
                 new_channel = random.randint(0, self.c-1)
                 channel_busy = new_channel not in empty_channels
-                agent.updateStrategy(k_t, (channel_busy, new_channel))
+                agent.updateStrategy(k_t, (channel_busy, new_channel), t)
+
+        #check convergence
+        if self.n >= self.c and len(successful_channels) == self.c:
+            return 1
+        elif self.n < self.c and len(successful_channels) == self.n:
+            return 1
         map(lambda c: c.reset(), self.channels)
+        return 0
 
-    def run(self):
-        for i, agent in enumerate(self.agents):
-            print "    agent i: ", i, agent.strategy
+    def run_convergence(self):
+        signals_converged = [0]*self.k
+        timestep = 0
+        while sum(signals_converged) < self.k:
+            timestep += 1
+            signal = self.signals.value()
+            signals_converged[signal] = self.timestep(signal, timestep)
+        #print "Converged!"
+        return timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
 
-        for t in range(15):
-            print "timestep: ", t
-            self.timestep(self.signals.value(), t)
-            for i, agent in enumerate(self.agents):
-                print "    agent i: ", i, agent.strategy
-sim = Simulator(3, .5, 2, 2)
-sim.run()
+
+for i in range(1):
+    p = (i+90)/100.
+    print p
+    total_timesteps = 0
+    for j in range(1000):
+        sim = Simulator(32, p, 16, 2)
+        timesteps, strategies = sim.run_convergence()
+        total_timesteps += timesteps
+    avg_timesteps = total_timesteps/100.
+
+    print avg_timesteps
+
+
+#sim = Simulator(32, .3, 16, 2)
+#timesteps, strategies = sim.run_convergence()
