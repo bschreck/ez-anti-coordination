@@ -62,17 +62,23 @@ class Simulator(object):
         else:
             self.signals = Signal(k, signals)
         self.channels = [Channel() for channel in range(c)]
+    def jain_index(self):
+        ck = float(self.c*self.k)
+        return ck / (ck + self.n - self.c)
 
     def timestep(self, k_t, t):
         strategies = [agent.strategy[k_t] for agent in self.agents]
+
         for strategy in strategies:
             if strategy > -1:
                 self.channels[strategy].transmit()
+
         successful_channels = [i for i,channel in enumerate(self.channels) if channel.count == 1]
         #print "successful_channels:", successful_channels
 
 
         empty_channels = [i for i,channel in enumerate(self.channels) if channel.count == 0]
+
         #print "empty channels:", empty_channels
         for agent in self.agents:
             if agent.strategy[k_t] > -1:
@@ -84,36 +90,60 @@ class Simulator(object):
                 agent.updateStrategy(k_t, (channel_busy, new_channel), t)
 
         #check convergence
+        map(lambda c: c.reset(), self.channels)
         if self.n >= self.c and len(successful_channels) == self.c:
             return 1
         elif self.n < self.c and len(successful_channels) == self.n:
             return 1
-        map(lambda c: c.reset(), self.channels)
         return 0
 
     def run_convergence(self):
         signals_converged = [0]*self.k
         timestep = 0
         while sum(signals_converged) < self.k:
+
             timestep += 1
             signal = self.signals.value()
-            signals_converged[signal] = self.timestep(signal, timestep)
+            converged = self.timestep(signal, timestep)
+            if signals_converged[signal] == 1 and converged == 0:
+                print "signal convergence destroyed"
+                signals_converged[signal] = converged
+                break
+            signals_converged[signal] = converged
         #print "Converged!"
         return timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
 
 
-for i in range(1):
-    p = (i+90)/100.
-    print p
+#for i in range(10):
+    #p = (i+90)/100.
+    #print p
+    #total_timesteps = 0
+    #for j in range(100):
+        #sim = Simulator(5, p, 5, 5)
+        #timesteps, strategies = sim.run_convergence()
+        #total_timesteps += timesteps
+    #avg_timesteps = total_timesteps/10.
+
+    #print avg_timesteps
+
+
+for c in range(63):
     total_timesteps = 0
-    for j in range(1000):
-        sim = Simulator(32, p, 16, 2)
+    for j in range(100):
+        sim = Simulator(64, .5, c+1, 64)
         timesteps, strategies = sim.run_convergence()
         total_timesteps += timesteps
     avg_timesteps = total_timesteps/100.
+    print "c = ", c
+    print "timesteps = ",avg_timesteps
 
-    print avg_timesteps
-
-
-#sim = Simulator(32, .3, 16, 2)
-#timesteps, strategies = sim.run_convergence()
+#for i in range(62):
+    #k = i+2
+    #total_timesteps = 0
+    #for j in range(100):
+        #sim = Simulator(64, .5, 32, k)
+        #timesteps, strategies = sim.run_convergence()
+        #total_timesteps += timesteps
+    #avg_timesteps = total_timesteps/100.
+    #print "k = ", k
+    #print "timesteps = ",avg_timesteps
