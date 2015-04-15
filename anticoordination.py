@@ -1,3 +1,4 @@
+#!/bin/python
 import random
 class Agent(object):
     def __init__(self, p, k, c):
@@ -127,7 +128,7 @@ class Simulator(object):
     #print avg_timesteps
 
 
-for c in range(63):
+for c in range(1):
     total_timesteps = 0
     for j in range(100):
         sim = Simulator(64, .5, c+1, 64)
