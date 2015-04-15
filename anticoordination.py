@@ -133,15 +133,15 @@ class Simulator(object):
     #print avg_timesteps
 
 
-#for c in range(63):
-    #total_timesteps = 0
-    #for j in range(100):
-        #sim = Simulator(64, .5, c+1, 64)
-        #timesteps, strategies = sim.run_convergence()
-        #total_timesteps += timesteps
-    #avg_timesteps = total_timesteps/100.
-    #print "c = ", c
-    #print "timesteps = ",avg_timesteps
+for c in range(63):
+    total_timesteps = 0
+    for j in range(100):
+        sim = Simulator(64, .5, c+1, 64)
+        timesteps, strategies = sim.run_convergence()
+        total_timesteps += timesteps
+    avg_timesteps = total_timesteps/100.
+    print "c = ", c
+    print "timesteps = ",avg_timesteps
 
 #for i in range(62):
     #k = i+2
