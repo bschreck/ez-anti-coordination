@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+import math
 import random
 class Agent(object):
     def __init__(self, p, k, c):
@@ -56,14 +58,18 @@ class Simulator(object):
         self.c = c
         self.k = k
         self.p = p
-        self.agents = [Agent(p, k, c) for agent in range(n)]
-        if not signals:
-            self.signals = Signal(k)
-        else:
-            self.signals = Signal(k, signals)
-        self.channels = [Channel() for channel in range(c)]
+        #self.agents = [Agent(p, k, c) for agent in range(n)]
+        #if not signals:
+            #self.signals = Signal(k)
+        #else:
+            #self.signals = Signal(k, signals)
+        #self.channels = [Channel() for channel in range(c)]
     def jain_index(self):
+        #print "c: ", self.c
+        #print "k: ", self.k
+        #print "n: ", self.n
         ck = float(self.c*self.k)
+        #print "ck: ", ck
         return ck / (ck + self.n - self.c)
 
     def timestep(self, k_t, t):
@@ -127,15 +133,15 @@ class Simulator(object):
     #print avg_timesteps
 
 
-for c in range(63):
-    total_timesteps = 0
-    for j in range(100):
-        sim = Simulator(64, .5, c+1, 64)
-        timesteps, strategies = sim.run_convergence()
-        total_timesteps += timesteps
-    avg_timesteps = total_timesteps/100.
-    print "c = ", c
-    print "timesteps = ",avg_timesteps
+#for c in range(63):
+    #total_timesteps = 0
+    #for j in range(100):
+        #sim = Simulator(64, .5, c+1, 64)
+        #timesteps, strategies = sim.run_convergence()
+        #total_timesteps += timesteps
+    #avg_timesteps = total_timesteps/100.
+    #print "c = ", c
+    #print "timesteps = ",avg_timesteps
 
 #for i in range(62):
     #k = i+2
@@ -147,3 +153,28 @@ for c in range(63):
     #avg_timesteps = total_timesteps/100.
     #print "k = ", k
     #print "timesteps = ",avg_timesteps
+
+jain_indices_n = []
+jain_indices_n_lg2_n = []
+jain_indices_n_2 = []
+for n in range(5,130):
+    k = n
+    c = 1
+    sim = Simulator(n, .5, c, k)
+    jain_indices_n.append(sim.jain_index())
+
+for n in range(5,130):
+    k = int(n*math.log(n))
+    c = 1
+    sim = Simulator(n, .5, c, k)
+    jain_indices_n_lg2_n.append(sim.jain_index())
+
+for n in range(5,130):
+    k = n**2
+    c = 1
+    sim = Simulator(n, .5, c, k)
+    jain_indices_n_2.append(sim.jain_index())
+plt.plot(jain_indices_n)
+plt.plot(jain_indices_n_lg2_n)
+plt.plot(jain_indices_n_2)
+plt.show()
