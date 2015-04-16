@@ -147,9 +147,8 @@ class Simulator(object):
 #Benchmark 2 (fig. 2 = avg # of steps to convergence for various values of k)
 #n = 64, c = n/2, p = .5
 def run_benchmark2(n, p):
-    k = range(2,65)
     all_avg_timesteps = []
-    for i in range(n-2):
+    for i in range(n-1):
         k = i+2
         total_timesteps = 0
         for j in range(100):
@@ -160,11 +159,21 @@ def run_benchmark2(n, p):
         all_avg_timesteps.append(avg_timesteps)
         print "k = ", k
         print "timesteps = ",avg_timesteps
+    k = range(2,65)
     print "k:"
     print k
     print "timesteps:"
     print all_avg_timesteps
+    #all_avg_timesteps = [22.16, 36.41, 50.94, 65.46, 84.18, 103.79, 119.11, 138.27, 153.32, 166.81,
+            #186.0, 206.77, 223.35, 241.76, 267.49, 292.61, 304.77, 319.51,
+            #341.27, 361.38, 379.11, 391.2, 420.47, 430.36, 475.44, 495.3,
+            #503.98, 532.87, 546.21, 560.0, 600.15, 609.23, 648.32, 634.12,
+            #666.31, 698.28, 699.44, 745.16, 767.57, 784.8, 774.54, 812.04,
+            #869.16, 866.34, 870.01, 902.79, 936.05, 936.76, 956.87, 989.47,
+            #997.25, 1027.04, 1090.05, 1085.03, 1116.87, 1161.2, 1153.51,
+            #1180.88, 1170.32, 1240.14, 1236.57, 1270.25]
     plt.plot(k, all_avg_timesteps)
+    plt.show()
 
 #jain_indices_n = []
 #jain_indices_n_lg2_n = []
