@@ -83,8 +83,8 @@ class Simulator(object):
         self.agents.append(agent)
         self.n += 1
 
-    def delete_agent(self, agentIdx):
-        self.agents.remove(agentIdx)
+    def remove_agent(self, agentIdx):
+        self.agents.pop(agentIdx)
         self.n -= 1
 
     def jain_index(self):
@@ -163,7 +163,7 @@ class Simulator(object):
         return timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
 
     def run_growing_population(self, num_agents_final, greedy = True, verbose = False):
-        timestep = 0       
+        timestep = 0
         while (self.num_agents() <= num_agents_final):
             # We set all signal_converged values to 0, which adds negligible extra time in the polite case
             signals_converged = [0]*self.k
@@ -191,8 +191,35 @@ class Simulator(object):
                 break
         return timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
 
-sim = Simulator(1, .3, 3, 2)
-timesteps, strategies = sim.run_growing_population(3, False, True)
+    def run_shrinking_population(self, num_agents_final, greedy = True, verbose = False):
+        timestep = 0       
+        while (self.num_agents() >= num_agents_final):
+            # We set all signal_converged values to 0, which adds negligible extra time in the polite case
+            signals_converged = [0]*self.k
+            if (verbose):
+                print timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
+            while sum(signals_converged) < self.k:
+
+                timestep += 1
+                signal = self.signals.value()
+                converged = self.timestep(signal, timestep)
+                if signals_converged[signal] == 1 and converged == 0:
+                    print "signal convergence destroyed"
+                    signals_converged[signal] = converged
+                    break
+                signals_converged[signal] = converged
+                if (verbose):
+                    print timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
+            #print "Converged!"
+
+            if (not self.num_agents() == num_agents_final):
+                self.remove_agent(random.randint(0,self.num_agents()-1))
+            else: 
+                break
+        return timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
+
+sim = Simulator(3, .3, 2, 2)
+timesteps, strategies = sim.run_shrinking_population(1, False, True)
 
 #for i in range(10):
     #p = (i+90)/100.
