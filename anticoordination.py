@@ -1,4 +1,5 @@
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
+from matplotlib.legend_handler import HandlerLine2D
 import math
 import random
 import numpy as np
@@ -27,33 +28,31 @@ class Agent(object):
     def cardinality(self):
         return float(len([s for s in self.strategy if self.strategy[s] > -1]))
 
-    def constant_p(self, backoff):
+    def constant_p(self):
         return self.p
-    def linear_p(self, backoff):
+    def linear_p(self):
         return self.cardinality()/self.k
-    def exponential_p(self, backoff):
+    def exponential_p(self):
         return self.mu**(1 - (self.cardinality()/self.k))
-    def worst_agent_last_p(self, backoff):
-        #back off
-        if backoff:
-            return 2
-        #don't back off
-        else:
-            return -1
+    def worst_agent_last_p(self):
+        #always backoff since we set channel_busy to false for the worst agent
+        return 2
 
 
-    def updateStrategy(self, k_t, observation, t, backoff):
+    def updateStrategy(self, k_t, observation, t):
         #possible heuristic: alter p over time based on t
         #self.p += .001
         channel_busy, channel = observation
+        print "saw channel_busy == ", channel_busy
         if self.strategy[k_t] > -1:
             if channel_busy:
                 #print "channel_busy:", channel_busy
-                if random.random() < self.backoff_strategy(backoff):
+                if random.random() < self.backoff_strategy():
                     self.strategy[k_t] = -1
                 else:
                     pass
             else:
+                print "keeping strategy of: ", self.strategy[k_t]
                 pass
         else:
             if channel_busy:
@@ -138,34 +137,23 @@ class Simulator(object):
 
     def timestep(self, k_t, t):
         strategies = [agent.strategy[k_t] for agent in self.agents]
+        print "k_t:", k_t
+        print strategies
 
         for strategy in strategies:
             if strategy > -1:
                 self.channels[strategy].transmit()
 
         successful_channels = [i for i,channel in enumerate(self.channels) if channel.count == 1]
-        #print "successful_channels:", successful_channels
+        print "successful_channels:", successful_channels
 
 
         empty_channels = [i for i,channel in enumerate(self.channels) if channel.count == 0]
 
-        #print "empty channels:", empty_channels
-        #for worst_agent_backoff scheme, if other scheme worst_agent and
-        #backoff don't matter
-        worst_agent = 0
         if self.backoff_strategy == "worst_agent_last":
-            worst_agent = np.argmin([a.cardinality() for a in self.agents])
-        for (i,agent) in enumerate(self.agents):
-            if agent.strategy[k_t] > -1:
-                channel_busy = agent.strategy[k_t] not in successful_channels
-                backoff = True
-                if i == worst_agent:
-                    backoff = False
-                agent.updateStrategy(k_t, (channel_busy, agent.strategy[k_t]),t, backoff)
-            else:
-                new_channel = random.randint(0, self.c-1)
-                channel_busy = new_channel not in empty_channels
-                agent.updateStrategy(k_t, (channel_busy, new_channel), t, False)
+            self.run_worst_agent_updates(k_t,t, successful_channels,empty_channels)
+        else:
+            self.run_regular_updates(k_t,t, successful_channels, empty_channels)
 
         #check convergence
         map(lambda c: c.reset(), self.channels)
@@ -175,6 +163,52 @@ class Simulator(object):
             return 1
         return 0
 
+    def run_regular_updates(self, k_t, t, successful_channels, empty_channels):
+        for agent in self.agents:
+            if agent.strategy[k_t] > -1:
+                channel_busy = agent.strategy[k_t] not in successful_channels
+                agent.updateStrategy(k_t,(channel_busy,agent.strategy[k_t]),t)
+            else:
+                new_channel= random.randint(0,self.c-1)
+                channel_busy=new_channel not in empty_channels
+                agent.updateStrategy(k_t,(channel_busy,new_channel),t)
+
+    def run_worst_agent_updates(self,k_t,t, successful_channels, empty_channels):
+        #print "empty channels:", empty_channels
+        #for worst_agent_backoff scheme, if other scheme worst_agent and
+        #backoff don't matter
+        worst_agent = None
+        nonneg_strategies = [a for a in self.agents if a.strategy[k_t] > -1]
+
+        collisions = [a for a in nonneg_strategies if a.strategy[k_t] not in successful_channels]
+        print "collisions: "
+        print collisions
+        noncollisions = [a for a in nonneg_strategies if a not in collisions]
+        print "noncollisions:"
+        print noncollisions
+
+        neg_strategies = [a for a in self.agents if a not in nonneg_strategies]
+        print "negatives:"
+        print neg_strategies
+
+        if collisions:
+            worst_agent = np.argmin([a.cardinality() for a in collisions])
+            print "worst_agent:"
+            print worst_agent
+
+        for (i,agent) in enumerate(collisions):
+            channel_busy = True
+            if worst_agent != None and i == worst_agent:
+                print "updating worst agent ", agent
+                channel_busy = False
+            agent.updateStrategy(k_t, (channel_busy, agent.strategy[k_t]),t)
+        for (i,agent) in enumerate(noncollisions):
+            channel_busy = False
+            agent.updateStrategy(k_t, (channel_busy, agent.strategy[k_t]),t)
+        for (i,agent) in enumerate(neg_strategies):
+            new_channel = random.randint(0, self.c-1)
+            channel_busy = new_channel not in empty_channels
+            agent.updateStrategy(k_t, (channel_busy, new_channel), t)
 
     def run_convergence(self, verbose = False):
         if (verbose):
@@ -363,31 +397,51 @@ def run_benchmark2(n, p):
 
 def run_backoff_strategy_benchmark(rounds):
     strategies = ["constant", "linear", "exponential", "worst_agent_last"]
+    strategies = ["worst_agent_last"]
     all_avg_jains_per_strategy = []
+    all_avg_timesteps_per_strategy = []
     #x axis = n
-    x = range(10,130)
+    x = np.array(range(10,140,12))
+    lines = []
+    total_timesteps = 0
     for strategy in strategies:
         all_avg_jains = []
-        for n in range(10,130):
+        all_avg_timesteps = []
+        #for n in range(10, 140, 12):
+        for n in range(10,11):
             c = n/2
-            k = 2*math.log(n)
+            print "c: ",c
+            k = int(round(2*math.log(n)))
+            print "k: ",k
+            k = 1
 
             sum_jain_indices = 0
 #TODO: make a reset function so we don't create the simulator each time
             for j in range(rounds):
-                sim = Simulator(n, p, c, k)
-                sim.run_convergence()
+                sim = Simulator(n, .5, c, k, backoff_strategy=strategy)
+                timesteps, strategies = sim.run_convergence()
                 jain = sim.jain_index()
+                total_timesteps += timesteps
                 sum_jain_indices += jain
             avg_jain = sum_jain_indices/float(rounds)
             all_avg_jains.append(avg_jain)
+            avg_timesteps = total_timesteps/float(rounds)
+            all_avg_timesteps.append(avg_timesteps)
+
             print "n = ", n
-            print "jain = ",jain
+            print "jain = ",avg_jain
+            print "timesteps =", avg_timesteps
         all_avg_jains_per_strategy.append(all_avg_jains)
-    line_styles = ["r--", "bs", "ko", "g^"]
-    for i in range(4):
-        plt.plot(x, all_avg_jains_per_strategy[i], line_styles[i],label=strategies[i])
-    plt.show()
+        all_avg_timesteps_per_strategy.append(all_avg_timesteps)
+    line_styles = ["r", "b", "k", "g"]
+    print all_avg_timesteps_per_strategy
+    print all_avg_jains_per_strategy
+    #for i in range(1):
+        #plt.scatter(x, np.array(all_avg_jains_per_strategy[i]), c=line_styles[i],label=strategies[i])
+        #lines.append(plt.plot(x, np.array(all_avg_jains_per_strategy[i]),
+            #line_styles[i],label=strategies[i]))
+    ##plt.legend(handler_map={lines[0][0]: HandlerLine2D(numpoints=2)})
+    #plt.show()
 
 #jain_indices_n = []
 #jain_indices_n_lg2_n = []
