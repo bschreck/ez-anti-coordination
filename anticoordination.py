@@ -207,6 +207,7 @@ timesteps, strategies = sim.run_growing_population(3, False, True)
     #print avg_timesteps
 
 
+
 # for c in range(63):
 #     total_timesteps = 0
 #     for j in range(100):
@@ -228,31 +229,86 @@ timesteps, strategies = sim.run_growing_population(3, False, True)
     #print "k = ", k
     #print "timesteps = ",avg_timesteps
 
-# jain_indices_n = []
-# jain_indices_n_lg2_n = []
-# jain_indices_n_2 = []
-# for n in range(5,130):
-#     k = n
-#     c = 1
-#     sim = Simulator(n, .5, c, k)
-#     jain_indices_n.append(sim.jain_index())
-
-# for n in range(5,130):
-#     k = int(n*math.log(n))
-#     c = 1
-#     sim = Simulator(n, .5, c, k)
-#     jain_indices_n_lg2_n.append(sim.jain_index())
-
-# for n in range(5,130):
-#     k = n**2
-#     c = 1
-#     sim = Simulator(n, .5, c, k)
-#     jain_indices_n_2.append(sim.jain_index())
-# plt.plot(jain_indices_n)
-# plt.plot(jain_indices_n_lg2_n)
-# plt.plot(jain_indices_n_2)
-# plt.show()
 
 
 
+#Benchmark 1 (fig. 1 - avg # of steps to convergence for various values of c)
+def run_benchmark1(n,p):
+    all_avg_timesteps = []
+    for c in range(63):
+        total_timesteps = 0
+        for j in range(100):
+            sim = Simulator(n, .5, c+1, n)
+            timesteps, strategies = sim.run_convergence()
+            total_timesteps += timesteps
+        avg_timesteps = total_timesteps/100.
+        print "c = ", c
+        print "timesteps = ",avg_timesteps
+    k = range(1,65)
+    print "k:"
+    print k
+    print "timesteps:"
+    print all_avg_timesteps
+    plt.plot(k, all_avg_timesteps)
+    plt.show()
+
+
+#Benchmark 2 (fig. 2 = avg # of steps to convergence for various values of k)
+#n = 64, c = n/2, p = .5
+def run_benchmark2(n, p):
+    all_avg_timesteps = []
+    for i in range(n-1):
+        k = i+2
+        total_timesteps = 0
+        for j in range(100):
+            sim = Simulator(n, p, n/2, k)
+            timesteps, strategies = sim.run_convergence()
+            total_timesteps += timesteps
+        avg_timesteps = total_timesteps/100.
+        all_avg_timesteps.append(avg_timesteps)
+        print "k = ", k
+        print "timesteps = ",avg_timesteps
+    k = range(2,65)
+    print "k:"
+    print k
+    print "timesteps:"
+    print all_avg_timesteps
+    #all_avg_timesteps = [22.16, 36.41, 50.94, 65.46, 84.18, 103.79, 119.11, 138.27, 153.32, 166.81,
+            #186.0, 206.77, 223.35, 241.76, 267.49, 292.61, 304.77, 319.51,
+            #341.27, 361.38, 379.11, 391.2, 420.47, 430.36, 475.44, 495.3,
+            #503.98, 532.87, 546.21, 560.0, 600.15, 609.23, 648.32, 634.12,
+            #666.31, 698.28, 699.44, 745.16, 767.57, 784.8, 774.54, 812.04,
+            #869.16, 866.34, 870.01, 902.79, 936.05, 936.76, 956.87, 989.47,
+            #997.25, 1027.04, 1090.05, 1085.03, 1116.87, 1161.2, 1153.51,
+            #1180.88, 1170.32, 1240.14, 1236.57, 1270.25]
+    plt.plot(k, all_avg_timesteps)
+    plt.show()
+
+#jain_indices_n = []
+#jain_indices_n_lg2_n = []
+#jain_indices_n_2 = []
+#for n in range(5,130):
+    #k = n
+    #c = 1
+    #sim = Simulator(n, .5, c, k)
+    #jain_indices_n.append(sim.jain_index())
+
+#for n in range(5,130):
+    #k = int(n*math.log(n))
+    #c = 1
+    #sim = Simulator(n, .5, c, k)
+    #jain_indices_n_lg2_n.append(sim.jain_index())
+
+#for n in range(5,130):
+    #k = n**2
+    #c = 1
+    #sim = Simulator(n, .5, c, k)
+    #jain_indices_n_2.append(sim.jain_index())
+#plt.plot(jain_indices_n)
+#plt.plot(jain_indices_n_lg2_n)
+#plt.plot(jain_indices_n_2)
+#plt.show()
+
+#run_benchmark2(64, 0.5)
+# run_benchmark2(64, 0.5)
 
