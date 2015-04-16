@@ -134,15 +134,25 @@ class Simulator(object):
 
 
 #Benchmark 1 (fig. 1 - avg # of steps to convergence for various values of c)
-#for c in range(1):
-    #total_timesteps = 0
-    #for j in range(100):
-        #sim = Simulator(64, .5, c+1, 64)
-        #timesteps, strategies = sim.run_convergence()
-        #total_timesteps += timesteps
-    #avg_timesteps = total_timesteps/100.
-    #print "c = ", c
-    #print "timesteps = ",avg_timesteps
+def run_benchmark1(n,p):
+    all_avg_timesteps = []
+    for c in range(63):
+        total_timesteps = 0
+        for j in range(100):
+            sim = Simulator(n, .5, c+1, n)
+            timesteps, strategies = sim.run_convergence()
+            total_timesteps += timesteps
+        avg_timesteps = total_timesteps/100.
+        print "c = ", c
+        print "timesteps = ",avg_timesteps
+    k = range(1,65)
+    print "k:"
+    print k
+    print "timesteps:"
+    print all_avg_timesteps
+    plt.plot(k, all_avg_timesteps)
+    plt.show()
+
 
 #Benchmark 2 (fig. 2 = avg # of steps to convergence for various values of k)
 #n = 64, c = n/2, p = .5
@@ -199,4 +209,6 @@ def run_benchmark2(n, p):
 #plt.plot(jain_indices_n_lg2_n)
 #plt.plot(jain_indices_n_2)
 #plt.show()
+
+#run_benchmark2(64, 0.5)
 run_benchmark2(64, 0.5)
