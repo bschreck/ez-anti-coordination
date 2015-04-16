@@ -212,7 +212,7 @@ class Simulator(object):
                     print timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
             #print "Converged!"
 
-            if (not self.num_agents() == num_agents_final):
+            if (not self.num_agents() == num_agents_final and self.num_agents() >= 1):
                 self.remove_agent(random.randint(0,self.num_agents()-1))
             else: 
                 break
