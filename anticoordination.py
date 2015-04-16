@@ -1,22 +1,55 @@
 import matplotlib.pyplot as plt
 import math
 import random
+import numpy as np
 class Agent(object):
-    def __init__(self, p, k, c):
+    #mu is for exponential_p
+    def __init__(self, p, k, c, mu, backoff_strategy):
         self.p = p
+        self.mu = mu
+        self.k = k
         self.strategy = {}
         for signal in range(k):
             self.strategy[signal] = random.randint(0,c-1)
         self.c = c
+        if backoff_strategy == "constant":
+            self.backoff_strategy = self.constant_p
+        elif backoff_strategy == "linear":
+            self.backoff_strategy = self.linear_p
+        elif backoff_strategy == "exponential":
+            self.backoff_strategy = self.exponential_p
+        #worst agent last
+        else:
+            self.backoff_strategy = self.worst_agent_last_p
 
-    def updateStrategy(self, k_t, observation, t):
+
+
+    def cardinality(self):
+        return float(len([s for s in self.strategy if self.strategy[s] > -1]))
+
+    def constant_p(self, backoff):
+        return self.p
+    def linear_p(self, backoff):
+        return self.cardinality()/self.k
+    def exponential_p(self, backoff):
+        return self.mu**(1 - (self.cardinality()/self.k))
+    def worst_agent_last_p(self, backoff):
+        #back off
+        if backoff:
+            return 2
+        #don't back off
+        else:
+            return -1
+
+
+    def updateStrategy(self, k_t, observation, t, backoff):
         #possible heuristic: alter p over time based on t
         #self.p += .001
         channel_busy, channel = observation
         if self.strategy[k_t] > -1:
             if channel_busy:
                 #print "channel_busy:", channel_busy
-                if random.random() < self.p:
+                if random.random() < self.backoff_strategy(backoff):
                     self.strategy[k_t] = -1
                 else:
                     pass
@@ -53,24 +86,31 @@ class Simulator(object):
     #k = number of signals
     #optional signals argument passes in specific signals
     #instead of generating them from k
-    def __init__(self, n, p, c, k, signals = None):
+    def __init__(self, n, p, c, k, signals = None, mu = .5, backoff_strategy = "constant"):
         self.n = n
         self.c = c
         self.k = k
         self.p = p
-        self.agents = [Agent(p, k, c) for agent in range(n)]
+        self.mu = mu
+        self.backoff_strategy = backoff_strategy
+        self.agents = [Agent(p, k, c, mu, backoff_strategy) for agent in range(n)]
         if not signals:
             self.signals = Signal(k)
         else:
             self.signals = Signal(k, signals)
         self.channels = [Channel() for channel in range(c)]
-    def jain_index(self):
+    def jain_index_constant(self):
         #print "c: ", self.c
         #print "k: ", self.k
         #print "n: ", self.n
         ck = float(self.c*self.k)
         #print "ck: ", ck
         return ck / (ck + self.n - self.c)
+    def jain_index(self):
+        #to be run after convergence
+        numerator = sum([a.cardinality() for a in self.agents])**2
+        denomenator = self.n*sum([a.cardinality()**2 for a in self.agents])
+        return numerator/denomenator
 
     def timestep(self, k_t, t):
         strategies = [agent.strategy[k_t] for agent in self.agents]
@@ -86,14 +126,22 @@ class Simulator(object):
         empty_channels = [i for i,channel in enumerate(self.channels) if channel.count == 0]
 
         #print "empty channels:", empty_channels
-        for agent in self.agents:
+        #for worst_agent_backoff scheme, if other scheme worst_agent and
+        #backoff don't matter
+        worst_agent = 0
+        if self.backoff_strategy == "worst_agent_last":
+            worst_agent = np.argmin([a.cardinality() for a in self.agents])
+        for (i,agent) in enumerate(self.agents):
             if agent.strategy[k_t] > -1:
                 channel_busy = agent.strategy[k_t] not in successful_channels
-                agent.updateStrategy(k_t, (channel_busy, agent.strategy[k_t]),t)
+                backoff = True
+                if i == worst_agent:
+                    backoff = False
+                agent.updateStrategy(k_t, (channel_busy, agent.strategy[k_t]),t, backoff)
             else:
                 new_channel = random.randint(0, self.c-1)
                 channel_busy = new_channel not in empty_channels
-                agent.updateStrategy(k_t, (channel_busy, new_channel), t)
+                agent.updateStrategy(k_t, (channel_busy, new_channel), t, False)
 
         #check convergence
         map(lambda c: c.reset(), self.channels)
@@ -102,6 +150,7 @@ class Simulator(object):
         elif self.n < self.c and len(successful_channels) == self.n:
             return 1
         return 0
+
 
     def run_convergence(self):
         signals_converged = [0]*self.k
@@ -185,6 +234,34 @@ def run_benchmark2(n, p):
     plt.plot(k, all_avg_timesteps)
     plt.show()
 
+def run_backoff_strategy_benchmark(rounds):
+    strategies = ["constant", "linear", "exponential", "worst_agent_last"]
+    all_avg_jains_per_strategy = []
+    #x axis = n
+    x = range(10,130)
+    for strategy in strategies:
+        all_avg_jains = []
+        for n in range(10,130):
+            c = n/2
+            k = 2*math.log(n)
+
+            sum_jain_indices = 0
+#TODO: make a reset function so we don't create the simulator each time
+            for j in range(rounds):
+                sim = Simulator(n, p, c, k)
+                sim.run_convergence()
+                jain = sim.jain_index()
+                sum_jain_indices += jain
+            avg_jain = sum_jain_indices/float(rounds)
+            all_avg_jains.append(avg_jain)
+            print "n = ", n
+            print "jain = ",jain
+        all_avg_jains_per_strategy.append(all_avg_jains)
+    line_styles = ["r--", "bs", "ko", "g^"]
+    for i in range(4):
+        plt.plot(x, all_avg_jains_per_strategy[i], line_styles[i],label=strategies[i])
+    plt.show()
+
 #jain_indices_n = []
 #jain_indices_n_lg2_n = []
 #jain_indices_n_2 = []
@@ -192,23 +269,23 @@ def run_benchmark2(n, p):
     #k = n
     #c = 1
     #sim = Simulator(n, .5, c, k)
-    #jain_indices_n.append(sim.jain_index())
+    #jain_indices_n.append(sim.jain_index_constant())
 
 #for n in range(5,130):
     #k = int(n*math.log(n))
     #c = 1
     #sim = Simulator(n, .5, c, k)
-    #jain_indices_n_lg2_n.append(sim.jain_index())
+    #jain_indices_n_lg2_n.append(sim.jain_index_constant())
 
 #for n in range(5,130):
     #k = n**2
     #c = 1
     #sim = Simulator(n, .5, c, k)
-    #jain_indices_n_2.append(sim.jain_index())
+    #jain_indices_n_2.append(sim.jain_index_constant())
 #plt.plot(jain_indices_n)
 #plt.plot(jain_indices_n_lg2_n)
 #plt.plot(jain_indices_n_2)
 #plt.show()
 
-#run_benchmark2(64, 0.5)
 run_benchmark2(64, 0.5)
+#run_benchmark1(64, 0.5)
