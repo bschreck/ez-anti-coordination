@@ -1,4 +1,4 @@
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import math
 import random
 import numpy as np
@@ -61,6 +61,17 @@ class Agent(object):
             else:
                 self.strategy[k_t] = channel
 
+    def set_strategy(self, greedy, n = None):
+
+        if greedy:
+            return
+        else:
+            if (not n):
+                return
+            for signal,action in self.strategy.items():
+                if random.random() > 1.0/n:
+                    self.strategy[signal] =  -1
+
 
 class Signal(object):
     def __init__(self,k, signals = None):
@@ -99,6 +110,19 @@ class Simulator(object):
         else:
             self.signals = Signal(k, signals)
         self.channels = [Channel() for channel in range(c)]
+
+
+    def num_agents(self):
+        return len(self.agents)
+
+    def add_agent(self, agent):
+        self.agents.append(agent)
+        self.n += 1
+
+    def remove_agent(self, agentIdx):
+        self.agents.pop(agentIdx)
+        self.n -= 1
+
     def jain_index_constant(self):
         #print "c: ", self.c
         #print "k: ", self.k
@@ -152,7 +176,9 @@ class Simulator(object):
         return 0
 
 
-    def run_convergence(self):
+    def run_convergence(self, verbose = False):
+        if (verbose):
+                print timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
         signals_converged = [0]*self.k
         timestep = 0
         while sum(signals_converged) < self.k:
@@ -165,9 +191,85 @@ class Simulator(object):
                 signals_converged[signal] = converged
                 break
             signals_converged[signal] = converged
+            if (verbose):
+                print timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
         #print "Converged!"
         return timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
 
+    def run_num_steps(self, num_steps, verbose = False):
+        if verbose:
+            print timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
+
+        signals_converged = [0]*self.k
+        timestep = 0
+
+        while (timestep < num_steps):
+            signal = self.signals.value()
+            signals_converged[signal] = self.timestep(signal, timestep)
+            timestep+=1;
+            if (verbose):
+                print timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
+
+        return timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
+
+    def run_growing_population(self, num_agents_final, greedy = True, verbose = False):
+        timestep = 0
+        while (self.num_agents() <= num_agents_final):
+            # We set all signal_converged values to 0, which adds negligible extra time in the polite case
+            signals_converged = [0]*self.k
+            if (verbose):
+                print timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
+            while sum(signals_converged) < self.k:
+
+                timestep += 1
+                signal = self.signals.value()
+                converged = self.timestep(signal, timestep)
+                if signals_converged[signal] == 1 and converged == 0:
+                    print "signal convergence destroyed"
+                    signals_converged[signal] = converged
+                    break
+                signals_converged[signal] = converged
+                if (verbose):
+                    print timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
+            #print "Converged!"
+
+            if (not self.num_agents() == num_agents_final):
+                new_agent = Agent(self.p, self.k, self.c);
+                new_agent.set_strategy(greedy, self.num_agents())
+                self.add_agent(new_agent)
+            else:
+                break
+        return timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
+
+    def run_shrinking_population(self, num_agents_final, greedy = True, verbose = False):
+        timestep = 0
+        while (self.num_agents() >= num_agents_final):
+            # We set all signal_converged values to 0, which adds negligible extra time in the polite case
+            signals_converged = [0]*self.k
+            if (verbose):
+                print timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
+            while sum(signals_converged) < self.k:
+
+                timestep += 1
+                signal = self.signals.value()
+                converged = self.timestep(signal, timestep)
+                if signals_converged[signal] == 1 and converged == 0:
+                    print "signal convergence destroyed"
+                    signals_converged[signal] = converged
+                    break
+                signals_converged[signal] = converged
+                if (verbose):
+                    print timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
+            #print "Converged!"
+
+            if (not self.num_agents() == num_agents_final and self.num_agents() >= 1):
+                self.remove_agent(random.randint(0,self.num_agents()-1))
+            else:
+                break
+        return timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
+
+#sim = Simulator(3, .3, 2, 2)
+#timesteps, strategies = sim.run_shrinking_population(1, False, True)
 
 #for i in range(10):
     #p = (i+90)/100.
@@ -180,6 +282,31 @@ class Simulator(object):
     #avg_timesteps = total_timesteps/10.
 
     #print avg_timesteps
+
+
+
+# for c in range(63):
+#     total_timesteps = 0
+#     for j in range(100):
+#         sim = Simulator(64, .5, c+1, 64)
+#         timesteps, strategies = sim.run_convergence()
+#         total_timesteps += timesteps
+#     avg_timesteps = total_timesteps/100.
+#     print "c = ", c
+#     print "timesteps = ",avg_timesteps
+
+#for i in range(62):
+    #k = i+2
+    #total_timesteps = 0
+    #for j in range(100):
+        #sim = Simulator(64, .5, 32, k)
+        #timesteps, strategies = sim.run_convergence()
+        #total_timesteps += timesteps
+    #avg_timesteps = total_timesteps/100.
+    #print "k = ", k
+    #print "timesteps = ",avg_timesteps
+
+
 
 
 #Benchmark 1 (fig. 1 - avg # of steps to convergence for various values of c)
@@ -287,5 +414,7 @@ def run_backoff_strategy_benchmark(rounds):
 #plt.plot(jain_indices_n_2)
 #plt.show()
 
-run_benchmark2(64, 0.5)
+#run_benchmark2(64, 0.5)
 #run_benchmark1(64, 0.5)
+
+run_backoff_strategy_benchmark(1)
