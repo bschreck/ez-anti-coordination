@@ -58,12 +58,12 @@ class Simulator(object):
         self.c = c
         self.k = k
         self.p = p
-        #self.agents = [Agent(p, k, c) for agent in range(n)]
-        #if not signals:
-            #self.signals = Signal(k)
-        #else:
-            #self.signals = Signal(k, signals)
-        #self.channels = [Channel() for channel in range(c)]
+        self.agents = [Agent(p, k, c) for agent in range(n)]
+        if not signals:
+            self.signals = Signal(k)
+        else:
+            self.signals = Signal(k, signals)
+        self.channels = [Channel() for channel in range(c)]
     def jain_index(self):
         #print "c: ", self.c
         #print "k: ", self.k
