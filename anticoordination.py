@@ -31,14 +31,17 @@ class Agent(object):
     def constant_p(self):
         return self.p
     def linear_p(self):
+        print "strategy:"
+        print self.strategy
+        print "cardinality:"
+        print self.cardinality()
+        print "p = :", self.cardinality()/self.k
         return self.cardinality()/self.k
     def exponential_p(self):
         return self.mu**(1 - (self.cardinality()/self.k))
 
 
     def updateStrategy(self, k_t, observation, t):
-        #possible heuristic: alter p over time based on t
-        #self.p += .001
         channel_busy, channel = observation
         if self.strategy[k_t] > -1:
             if channel_busy:
@@ -97,12 +100,12 @@ class Simulator(object):
         self.p = p
         self.mu = mu
         self.backoff_strategy = backoff_strategy
-        self.agents = [Agent(p, k, c, mu, backoff_strategy) for agent in range(n)]
+        #self.agents = [Agent(p, k, c, mu, backoff_strategy) for agent in range(n)]
         if not signals:
             self.signals = Signal(k)
         else:
             self.signals = Signal(k, signals)
-        self.channels = [Channel() for channel in range(c)]
+        #self.channels = [Channel() for channel in range(c)]
 
 
     def num_agents(self):
@@ -317,10 +320,10 @@ def run_benchmark2(n, p):
         print "k = ", k
         print "timesteps = ",avg_timesteps
     k = range(2,65)
-    print "k:"
-    print k
-    print "timesteps:"
-    print all_avg_timesteps
+    #print "k:"
+    #print k
+    #print "timesteps:"
+    #print all_avg_timesteps
     #all_avg_timesteps = [22.16, 36.41, 50.94, 65.46, 84.18, 103.79, 119.11, 138.27, 153.32, 166.81,
             #186.0, 206.77, 223.35, 241.76, 267.49, 292.61, 304.77, 319.51,
             #341.27, 361.38, 379.11, 391.2, 420.47, 430.36, 475.44, 495.3,
@@ -337,16 +340,17 @@ def run_backoff_strategy_benchmark(rounds):
     all_avg_jains_per_strategy = []
     all_avg_timesteps_per_strategy = []
     #x axis = n
-    x = np.array(range(10,140,12))
+    #x = np.array(range(10,140,12))
+    x = np.array(range(10,20,5))
     lines = []
     total_timesteps = 0
     for strategy in strategies:
         all_avg_jains = []
         all_avg_timesteps = []
-        for n in range(10, 140, 12):
-        #for n in range(10,11):
+        #for n in range(10, 140, 12):
+        for n in range(10,20,5):
             c = n/2
-            k = int(round(2*math.log(n)))
+            k = int(round(2*math.log(n,2)))
 
             sum_jain_indices = 0
             for j in range(rounds):
@@ -371,9 +375,7 @@ def run_backoff_strategy_benchmark(rounds):
     labels = ["constant", "linear", "exponential"]
 
     f, axarr = plt.subplots(2, sharex=True)
-    axarr[0].plot(x, y)
-    axarr[0].set_title('Sharing X axis')
-    axarr[1].scatter(x, y)
+
 
     for i in range(3):
         axarr[0].scatter(x, np.array(all_avg_jains_per_strategy[i]), c=line_styles[i])
@@ -388,28 +390,28 @@ def run_backoff_strategy_benchmark(rounds):
     axarr[1].legend()
     plt.show()
 
-def run_fairness_benchmark():
+def run_fairness_benchmark1():
     jain_indices_n = []
     jain_indices_n_lg2_n = []
     jain_indices_n_2 = []
-    for n in range(5,130):
+    for n in range(10,130,10):
         k = n
         c = 1
         sim = Simulator(n, .5, c, k)
         jain_indices_n.append(sim.jain_index_constant())
 
-    for n in range(5,130):
-        k = int(n*math.log(n))
+    for n in range(10,130,10):
+        k = int(n*math.log(n,2))
         c = 1
         sim = Simulator(n, .5, c, k)
         jain_indices_n_lg2_n.append(sim.jain_index_constant())
 
-    for n in range(5,130):
+    for n in range(10,130,10):
         k = n**2
         c = 1
         sim = Simulator(n, .5, c, k)
         jain_indices_n_2.append(sim.jain_index_constant())
-    domain = np.array(range(5,130))
+    domain = np.array(range(10,130,10))
     plt.scatter(domain, np.array(jain_indices_n), c='r')
     plt.plot(domain, jain_indices_n,c='r', label="K = N")
     plt.scatter(domain, np.array(jain_indices_n_lg2_n), c='k')
@@ -419,8 +421,39 @@ def run_fairness_benchmark():
     plt.legend()
     plt.show()
 
-#run_benchmark2(64, 0.5)
-#run_benchmark1(64, 0.5)
+def run_fairness_benchmark2():
+    jain_indices_2 = []
+    jain_indices_2_lg2_n = []
+    jain_indices_2_n = []
+    for n in range(10,130,10):
+        k = 2
+        c = round(n/2)
+        sim = Simulator(n, .5, c, k)
+        jain_indices_2.append(sim.jain_index_constant())
 
-run_backoff_strategy_benchmark(100)
-#run_fairness_benchmark()
+    for n in range(10,130,10):
+        k = 2*math.log(n,2)
+        c = round(n/2)
+        sim = Simulator(n, .5, c, k)
+        jain_indices_2_lg2_n.append(sim.jain_index_constant())
+
+    for n in range(10,130,10):
+        k = 2*n
+        c = round(n/2)
+        sim = Simulator(n, .5, c, k)
+        jain_indices_2_n.append(sim.jain_index_constant())
+    domain = np.array(range(10,130,10))
+    plt.scatter(domain, np.array(jain_indices_2), c='r')
+    plt.plot(domain, jain_indices_2,c='r', label="K = 2")
+    plt.scatter(domain, np.array(jain_indices_2_lg2_n), c='k')
+    plt.plot(domain, jain_indices_2_lg2_n,c='k', label="K = 2lgN")
+    plt.scatter(domain, np.array(jain_indices_2_n), c='b')
+    plt.plot(domain, jain_indices_2_n,c='b', label="K = 2N")
+    plt.legend()
+    plt.show()
+
+#run_benchmark2(64, 0.5)
+run_benchmark1(64, 0.5)
+
+#run_backoff_strategy_benchmark(1)
+#run_fairness_benchmark1()
