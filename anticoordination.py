@@ -24,6 +24,8 @@ class Agent(object):
 
     def cardinality(self):
         return float(len([s for s in self.strategy if self.strategy[s] > -1]))
+
+    #backoff strategies:
     def constant_p(self):
         return self.p
     def linear_p(self):
@@ -36,6 +38,7 @@ class Agent(object):
         channel_busy, channel = observation
         if self.strategy[k_t] > -1:
             if channel_busy:
+                #self.backoff_strategy() gives current probability of backoff
                 if random.random() < self.backoff_strategy():
                     self.strategy[k_t] = -1
                 else:
@@ -45,6 +48,7 @@ class Agent(object):
         else:
             if channel_busy:
                 pass
+            #pick a new channel
             else:
                 self.strategy[k_t] = channel
 
@@ -61,10 +65,8 @@ class Agent(object):
 
 
 class Signal(object):
-    def __init__(self,k, signals = None):
+    def __init__(self,k):
         self.k = k
-        if signals:
-            self.signals = signals
     def value(self):
         return random.randint(0,self.k-1)
 
@@ -82,9 +84,9 @@ class Simulator(object):
     #p = probability of strategy
     #c = number of channels
     #k = number of signals
-    #optional signals argument passes in specific signals
-    #instead of generating them from k
-    def __init__(self, n, p, c, k, signals = None, mu = .5, backoff_strategy = "constant"):
+    #mu = exponent base for exponential backoff_strategy
+    #backoff_strategy is one of ["constant", "linear", "exponential"]
+    def __init__(self, n, p, c, k, mu = .5, backoff_strategy = "constant"):
         self.n = n
         self.c = c
         self.k = k
@@ -92,10 +94,7 @@ class Simulator(object):
         self.mu = mu
         self.backoff_strategy = backoff_strategy
         self.agents = [Agent(p, k, c, mu, backoff_strategy) for agent in range(n)]
-        if not signals:
-            self.signals = Signal(k)
-        else:
-            self.signals = Signal(k, signals)
+        self.signals = Signal(k)
         self.channels = [Channel() for channel in range(c)]
 
 
@@ -111,32 +110,43 @@ class Simulator(object):
         self.n -= 1
 
     def jain_index_constant(self):
+        #runs the constant p version of the jain index
         ck = float(self.c*self.k)
         return ck / (ck + self.n - self.c)
 
     def jain_index(self):
+        #runs the version of jain index based on cardinality, for varying
+        # backoff probability strategies
+
         #to be run after convergence
         numerator = sum([a.cardinality() for a in self.agents])**2
         denomenator = self.n*sum([a.cardinality()**2 for a in self.agents])
         return numerator/denomenator
 
     def timestep(self, k_t, t):
+        #run a single timestep of the algorithm
         strategies = [agent.strategy[k_t] for agent in self.agents]
 
+        #carry out each agent's strategy
         for strategy in strategies:
             if strategy > -1:
                 self.channels[strategy].transmit()
 
+        #channels for which only one agent transmitted
         successful_channels = [i for i,channel in enumerate(self.channels) if channel.count == 1]
 
 
+        #channels for which no agents transmitted
         empty_channels = [i for i,channel in enumerate(self.channels) if channel.count == 0]
 
 
+        #update each agent's strategy
         self.run_updates(k_t,t, successful_channels, empty_channels)
 
-        #check convergence
+        #reset each channel for next round
         map(lambda c: c.reset(), self.channels)
+
+        #check convergence
         if self.n >= self.c and len(successful_channels) == self.c:
             return 1
         elif self.n < self.c and len(successful_channels) == self.n:
@@ -144,6 +154,7 @@ class Simulator(object):
         return 0
 
     def run_updates(self, k_t, t, successful_channels, empty_channels):
+        #update each agent's strategy
         for agent in self.agents:
             if agent.strategy[k_t] > -1:
                 channel_busy = agent.strategy[k_t] not in successful_channels
@@ -155,6 +166,7 @@ class Simulator(object):
 
 
     def run_convergence(self, verbose = False):
+        #this is the main function that runs the simulator until it converges
         if (verbose):
                 print timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
         signals_converged = [0]*self.k
@@ -276,63 +288,6 @@ def run_benchmark2(n, p):
     plt.plot(k, all_avg_timesteps)
     plt.show()
 
-def run_backoff_strategy_benchmark(rounds):
-    strategies = ["constant", "linear", "exponential"]
-    all_avg_jains_per_strategy = []
-    all_avg_timesteps_per_strategy = []
-    tests = [8, 12, 18, 24, 32, 46, 54, 92, 130]
-    lines = []
-    total_timesteps = 0
-    for strategy in strategies:
-        all_avg_jains = []
-        all_avg_timesteps = []
-        for n in tests:
-            c = n/2
-            k = int(round(2*math.log(n,2)))
-
-            sum_jain_indices = 0
-            for j in range(rounds):
-                sim = Simulator(n, .5, c, k, backoff_strategy=strategy)
-                timesteps, strategies = sim.run_convergence()
-                jain = sim.jain_index()
-                total_timesteps += timesteps
-                sum_jain_indices += jain
-            avg_jain = sum_jain_indices/float(rounds)
-            all_avg_jains.append(avg_jain)
-            avg_timesteps = total_timesteps/float(rounds)
-            all_avg_timesteps.append(avg_timesteps)
-
-            print "n = ", n
-            print "jain = ",avg_jain
-            print "timesteps =", avg_timesteps
-        all_avg_jains_per_strategy.append(all_avg_jains)
-        all_avg_timesteps_per_strategy.append(all_avg_timesteps)
-    print all_avg_timesteps_per_strategy
-    print all_avg_jains_per_strategy
-
-    line_styles = ["r", "b", "k"]
-    labels = ["constant", "linear", "exponential"]
-
-    f, axarr = plt.subplots(2)
-
-    x = np.array(tests)
-
-    for i in range(3):
-        axarr[0].scatter(x, np.array(all_avg_jains_per_strategy[i]), c=line_styles[i])
-        lines.append(axarr[0].plot(x, np.array(all_avg_jains_per_strategy[i]),
-            line_styles[i],label=labels[i]))
-    axarr[0].legend(bbox_to_anchor=(0.7, .5), loc=2,
-            borderaxespad=0.,prop={'size':10})
-
-    for i in range(3):
-        axarr[1].scatter(x, np.array(all_avg_timesteps_per_strategy[i]), c=line_styles[i])
-        lines.append(axarr[1].plot(x, np.array(all_avg_timesteps_per_strategy[i]),
-            line_styles[i],label=labels[i]))
-    axarr[1].legend(bbox_to_anchor=(0, 1), loc=2,
-            borderaxespad=0.,prop={'size':10})
-    axarr[1].set_yscale('log')
-    axarr[1].set_xscale('log')
-    plt.show()
 
 #Benchmark 3: Jain Indices (a measure of fairness)
 # for various settings of K and N.
