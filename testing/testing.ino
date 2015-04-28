@@ -18,21 +18,31 @@ void setup() {
   colors[3] = strip.Color(0,255,255);
   colors[4] = strip.Color(0,0,255);
   colors[5] = strip.Color(255,0,255);
-  strip.setBrightness(32);
+  strip.setBrightness(8);
+  
 }
 
 void loop() {
   if (Serial.available() > 0){
-    int signal = Serial.read()-48;
+    int signal = Serial.read();
 
-    if (signal == 9){
+    if (signal == '9'){
       num_agents = Serial.read()-48;
       num_channels = Serial.read()-48;
-
+      strip.clear();
+    }
+    else if (signal == 'I'){
+      num_agents += 1;
+    }
+    else if (signal == 'D'){
+      num_agents -= 1;
     }
     else{
+      signal -= 48;
       int agent_strategies[num_agents];
-      
+      for (int i=0; i < 8; i++){
+        strip.setPixelColor(signal*8 + i, 0,0,0);
+      }
       //read strategies for timestep
       for (int i=0; i < num_agents; i++){
         agent_strategies[i] = (Serial.read() - 48);

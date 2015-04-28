@@ -5,7 +5,7 @@ import random
 import numpy as np
 class Agent(object):
     #mu is for exponential_p
-    def __init__(self, p, k, c, mu, backoff_strategy):
+    def __init__(self, p, k, c, mu =  .5, backoff_strategy = "constant"):
         self.p = p
         self.mu = mu
         self.k = k
@@ -183,25 +183,6 @@ class Simulator(object):
                 print timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
         return timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
 
-    def run_convergence_with_results(self):
-        #this is the main function that runs the simulator until it converges
-        signals_converged = [0]*self.k
-        timestep = 0
-        while sum(signals_converged) < self.k:
-
-            timestep += 1
-            signal = self.signals.value()
-            list_timestep = [signal]+[agent.strategy[signal] for agent in self.agents]
-            self.results.append(list_timestep)
-            converged = self.timestep(signal, timestep)
-
-            signals_converged[signal] = converged
-            #appends the output of each timestep
-            #each row in results is a timestep
-            #each column is an agent with its strategy
-        print self.results
-        return self.results
-
     def run_num_steps(self, num_steps, verbose = False):
         if verbose:
             print timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
@@ -265,6 +246,76 @@ class Simulator(object):
             else:
                 break
         return timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
+
+    def run_convergence_with_results(self):
+        #this is the main function that runs the simulator until it converges
+        self.results = []
+        signals_converged = [0]*self.k
+        timestep = 0
+        while sum(signals_converged) < self.k:
+
+            timestep += 1
+            signal = self.signals.value()
+            list_timestep = [signal]+[agent.strategy[signal] for agent in self.agents]
+            self.results.append(list_timestep)
+            converged = self.timestep(signal, timestep)
+
+            signals_converged[signal] = converged
+            #appends the output of each timestep
+            #each row in results is a timestep
+            #each column is an agent with its strategy
+        print self.results
+        return self.results
+
+    def run_growing_population_with_results(self, num_agents_final, greedy = True):
+        self.results = []
+        timestep = 0
+        while (self.num_agents() <= num_agents_final):
+            # We set all signal_converged values to 0, which adds negligible extra time in the polite case
+            signals_converged = [0]*self.k
+            while sum(signals_converged) < self.k:
+
+                timestep += 1
+                signal = self.signals.value()
+                list_timestep = [signal]+[agent.strategy[signal] for agent in self.agents]
+                self.results.append(list_timestep)
+                converged = self.timestep(signal, timestep)
+
+                signals_converged[signal] = converged
+               
+
+            if (not self.num_agents() == num_agents_final):
+                new_agent = Agent(self.p, self.k, self.c);
+                new_agent.set_strategy(greedy, self.num_agents())
+                self.add_agent(new_agent)
+                self.results.append(['I'])
+            else:
+                break
+        return self.results
+
+    def run_shrinking_population_with_results(self, num_agents_final, greedy = True):
+        self.results = []
+        timestep = 0
+        while (self.num_agents() >= num_agents_final):
+            # We set all signal_converged values to 0, which adds negligible extra time in the polite case
+            signals_converged = [0]*self.k
+            while sum(signals_converged) < self.k:
+
+                timestep += 1
+                signal = self.signals.value()
+                list_timestep = [signal]+[agent.strategy[signal] for agent in self.agents]
+                self.results.append(list_timestep)
+                converged = self.timestep(signal, timestep)
+
+                signals_converged[signal] = converged
+
+            if (not self.num_agents() == num_agents_final and self.num_agents() >= 1):
+                self.remove_agent(random.randint(0,self.num_agents()-1))
+                self.results.append(['D'])
+            else:
+                break
+        return self.results
+
 
 
 

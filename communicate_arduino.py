@@ -5,12 +5,13 @@ ser = serial.Serial('/dev/cu.usbmodem1451', 9600, timeout=1)  # open first seria
 
 
 #initialize simulation
-n = 8
+n = 6
 p = .5
-c = 6
-k = 8
+c = 2
+k = 4
 sim = ac.Simulator(n, p, c, k)
-results = sim.run_convergence_with_results()
+# results = sim.run_convergence_with_results()
+results = sim.run_shrinking_population_with_results(3, True)
 
 # send parameters
 params = "9"+str(n)+str(c)
