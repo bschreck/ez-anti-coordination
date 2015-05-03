@@ -309,6 +309,7 @@ class Simulator(object):
                 break
         return self.results
 
+
     def run_shrinking_population_with_results(self, num_agents_final, greedy = True):
         self.results = []
         timestep = 0
@@ -534,4 +535,32 @@ def run_benchmark_optimal_probability():
     plt.plot(probs, all_avg_timesteps)
     plt.show()
 
-run_benchmark_optimal_probability()
+#run_benchmark_optimal_probability()
+
+def run_growing_shrinking_time_between_convergence():
+    total_cycle_time = 0
+    for n in range(1,8):
+        for j in range(1000):
+            sim = Simulator(n, .5, 8, 8)
+            results = sim.run_growing_population_with_results(n+1, greedy = True)
+            sep = None
+            for i,x in enumerate(results):
+                if x == ["I"]:
+                    sep = i
+            total_cycle_time += len(results) - sep
+    avg_cycle_time = total_cycle_time/7000.
+    print avg_cycle_time
+
+    total_cycle_time = 0
+    for n in range(2,9):
+        for j in range(1000):
+            sim = Simulator(n, .5, 8, 8)
+            results = sim.run_shrinking_population_with_results(n-1, greedy = True)
+            sep = None
+            for i,x in enumerate(results):
+                if x == ["D"]:
+                    sep = i
+            total_cycle_time += len(results) - sep
+    avg_cycle_time = total_cycle_time/7000.
+    print avg_cycle_time
+run_growing_shrinking_time_between_convergence()
