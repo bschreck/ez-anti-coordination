@@ -125,7 +125,7 @@ class Simulator(object):
         denomenator = self.n*sum([a.cardinality()**2 for a in self.agents])
         return numerator/denomenator
 
-    def noisy_signal(self,k_t):
+    def noisy_signal(k_t):
         noise = self.signals.value()
         if random.random() < self.signal_noise:
             return noise
@@ -348,27 +348,24 @@ def run_benchmark1(n,p):
     plt.show()
 
 #Benchmark 1 (fig. 1 - avg # of steps to convergence for various values of c)
-def run_benchmark_noise(n,p):
+def run_benchmark_noise(n,p, signal_noise = .01):
     all_avg_timesteps = []
-    for c in range(n-1):
+    for c in range(63):
         total_timesteps = 0
-        for j in range(100):
-            sim = Simulator(n, .5, c+1, n, signal_noise = .01)
+        for j in range(1):
+            sim = Simulator(n, .5, c+1, n)
             timesteps, strategies = sim.run_convergence()
             total_timesteps += timesteps
         avg_timesteps = total_timesteps/100.
         print "c = ", c
         print "timesteps = ",avg_timesteps
-        all_avg_timesteps.append(avg_timesteps)
-    k = range(1,n)
+    k = range(1,64)
     print "k:"
     print k
     print "timesteps:"
     print all_avg_timesteps
     plt.plot(k, all_avg_timesteps)
     plt.show()
-
-run_benchmark_noise(64, 0.01)
 
 
 #Benchmark 2 (fig. 2 = avg # of steps to convergence for various values of k)
@@ -458,11 +455,3 @@ def run_fairness_benchmark2():
     plt.plot(domain, jain_indices_2_n,c='b', label="K = 2N")
     plt.legend()
     plt.show()
-
-
-
-#Noisy signals
-
-#Noisy channel reads/writes
-
-#Improving performance by tuning probability for 8 channels and various signals
