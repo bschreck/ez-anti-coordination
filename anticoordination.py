@@ -86,7 +86,7 @@ class Simulator(object):
     #k = number of signals
     #mu = exponent base for exponential backoff_strategy
     #backoff_strategy is one of ["constant", "linear", "exponential"]
-    def __init__(self, n, p, c, k, mu = .5, backoff_strategy = "constant",signal_noise = 0):
+    def __init__(self, n, p, c, k, mu = .5, backoff_strategy = "constant",signal_noise = 0, channel_noise = 0):
         self.n = n
         self.c = c
         self.k = k
@@ -96,6 +96,7 @@ class Simulator(object):
         self.agents = [Agent(p, k, c, mu, backoff_strategy) for agent in range(n)]
         self.signals = Signal(k)
         self.signal_noise = signal_noise
+        self.channel_noise = channel_noise
         self.channels = [Channel() for channel in range(c)]
         self.results = []
 
@@ -132,6 +133,13 @@ class Simulator(object):
         else:
             return k_t
 
+    def noisy_channel(self,channel_busy):
+        noise = not channel_busy
+        if random.random() < self.channel_noise:
+            return noise
+        else:
+            return channel_busy
+
     def timestep(self, k_t, t):
         #run a single timestep of the algorithm
         strategies = [agent.strategy[self.noisy_signal(k_t)] for agent in self.agents]
@@ -167,11 +175,11 @@ class Simulator(object):
         for agent in self.agents:
             if agent.strategy[k_t] > -1:
                 channel_busy = agent.strategy[k_t] not in successful_channels
-                agent.updateStrategy(k_t,(channel_busy,agent.strategy[k_t]),t)
+                agent.updateStrategy(k_t,(self.noisy_channel(channel_busy),agent.strategy[k_t]),t)
             else:
                 new_channel= random.randint(0,self.c-1)
                 channel_busy=new_channel not in empty_channels
-                agent.updateStrategy(k_t,(channel_busy,new_channel),t)
+                agent.updateStrategy(k_t,(self.noisy_channel(channel_busy),new_channel),t)
 
 
     def run_convergence(self, verbose = False):
@@ -347,13 +355,12 @@ def run_benchmark1(n,p):
     plt.plot(k, all_avg_timesteps)
     plt.show()
 
-#Benchmark 1 (fig. 1 - avg # of steps to convergence for various values of c)
-def run_benchmark_noise(n,p):
+def run_benchmark_noise_signal(n,p, sig_noise):
     all_avg_timesteps = []
     for c in range(n-1):
         total_timesteps = 0
         for j in range(100):
-            sim = Simulator(n, .5, c+1, n, signal_noise = .01)
+            sim = Simulator(n, .5, c+1, n, signal_noise = sig_noise)
             timesteps, strategies = sim.run_convergence()
             total_timesteps += timesteps
         avg_timesteps = total_timesteps/100.
@@ -368,7 +375,48 @@ def run_benchmark_noise(n,p):
     plt.plot(k, all_avg_timesteps)
     plt.show()
 
-run_benchmark_noise(64, 0.01)
+def run_benchmark_noise_channel(n,p, chan_noise):
+    all_avg_timesteps = []
+    for c in range(n-1):
+        total_timesteps = 0
+        for j in range(100):
+            sim = Simulator(n, .5, c+1, n, channel_noise = chan_noise)
+            timesteps, strategies = sim.run_convergence()
+            total_timesteps += timesteps
+        avg_timesteps = total_timesteps/100.
+        print "c = ", c
+        print "timesteps = ",avg_timesteps
+        all_avg_timesteps.append(avg_timesteps)
+    k = range(1,n)
+    print "k:"
+    print k
+    print "timesteps:"
+    print all_avg_timesteps
+    plt.plot(k, all_avg_timesteps)
+    plt.show()
+
+def run_benchmark_noise_signal_channel(n,p, sig_noise, chan_noise):
+    all_avg_timesteps = []
+    for c in range(n-1):
+        total_timesteps = 0
+        for j in range(100):
+            sim = Simulator(n, .5, c+1, n, channel_noise = chan_noise)
+            timesteps, strategies = sim.run_convergence()
+            total_timesteps += timesteps
+        avg_timesteps = total_timesteps/100.
+        print "c = ", c
+        print "timesteps = ",avg_timesteps
+        all_avg_timesteps.append(avg_timesteps)
+    k = range(1,n)
+    print "k:"
+    print k
+    print "timesteps:"
+    print all_avg_timesteps
+    plt.plot(k, all_avg_timesteps)
+    plt.show()
+
+run_benchmark_noise_signal_channel(8,.5,0.01,.01)
+
 
 
 #Benchmark 2 (fig. 2 = avg # of steps to convergence for various values of k)
