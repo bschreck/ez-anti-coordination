@@ -355,67 +355,6 @@ def run_benchmark1(n,p):
     plt.plot(k, all_avg_timesteps)
     plt.show()
 
-def run_benchmark_noise_signal(n,p, sig_noise):
-    all_avg_timesteps = []
-    for c in range(n-1):
-        total_timesteps = 0
-        for j in range(100):
-            sim = Simulator(n, .5, c+1, n, signal_noise = sig_noise)
-            timesteps, strategies = sim.run_convergence()
-            total_timesteps += timesteps
-        avg_timesteps = total_timesteps/100.
-        print "c = ", c
-        print "timesteps = ",avg_timesteps
-        all_avg_timesteps.append(avg_timesteps)
-    k = range(1,n)
-    print "k:"
-    print k
-    print "timesteps:"
-    print all_avg_timesteps
-    plt.plot(k, all_avg_timesteps)
-    plt.show()
-
-def run_benchmark_noise_channel(n,p, chan_noise):
-    all_avg_timesteps = []
-    for c in range(n-1):
-        total_timesteps = 0
-        for j in range(100):
-            sim = Simulator(n, .5, c+1, n, channel_noise = chan_noise)
-            timesteps, strategies = sim.run_convergence()
-            total_timesteps += timesteps
-        avg_timesteps = total_timesteps/100.
-        print "c = ", c
-        print "timesteps = ",avg_timesteps
-        all_avg_timesteps.append(avg_timesteps)
-    k = range(1,n)
-    print "k:"
-    print k
-    print "timesteps:"
-    print all_avg_timesteps
-    plt.plot(k, all_avg_timesteps)
-    plt.show()
-
-def run_benchmark_noise_signal_channel(n,p, sig_noise, chan_noise):
-    all_avg_timesteps = []
-    for c in range(n-1):
-        total_timesteps = 0
-        for j in range(100):
-            sim = Simulator(n, .5, c+1, n, channel_noise = chan_noise)
-            timesteps, strategies = sim.run_convergence()
-            total_timesteps += timesteps
-        avg_timesteps = total_timesteps/100.
-        print "c = ", c
-        print "timesteps = ",avg_timesteps
-        all_avg_timesteps.append(avg_timesteps)
-    k = range(1,n)
-    print "k:"
-    print k
-    print "timesteps:"
-    print all_avg_timesteps
-    plt.plot(k, all_avg_timesteps)
-    plt.show()
-
-run_benchmark_noise_signal_channel(8,.5,0.01,.01)
 
 
 
@@ -514,3 +453,85 @@ def run_fairness_benchmark2():
 #Noisy channel reads/writes
 
 #Improving performance by tuning probability for 8 channels and various signals
+
+
+def run_benchmark_noise_signal(n,p, sig_noise):
+    all_avg_timesteps = []
+    for c in range(n-1):
+        total_timesteps = 0
+        for j in range(100):
+            sim = Simulator(n, .5, c+1, n, signal_noise = sig_noise)
+            timesteps, strategies = sim.run_convergence()
+            total_timesteps += timesteps
+        avg_timesteps = total_timesteps/100.
+        print "c = ", c
+        print "timesteps = ",avg_timesteps
+        all_avg_timesteps.append(avg_timesteps)
+    k = range(1,n)
+    print "k:"
+    print k
+    print "timesteps:"
+    print all_avg_timesteps
+    plt.plot(k, all_avg_timesteps)
+    plt.show()
+
+def run_benchmark_noise_channel(n,p, chan_noise):
+    all_avg_timesteps = []
+    for c in range(n-1):
+        total_timesteps = 0
+        for j in range(100):
+            sim = Simulator(n, .5, c+1, n, channel_noise = chan_noise)
+            timesteps, strategies = sim.run_convergence()
+            total_timesteps += timesteps
+        avg_timesteps = total_timesteps/100.
+        print "c = ", c
+        print "timesteps = ",avg_timesteps
+        all_avg_timesteps.append(avg_timesteps)
+    k = range(1,n)
+    print "k:"
+    print k
+    print "timesteps:"
+    print all_avg_timesteps
+    plt.plot(k, all_avg_timesteps)
+    plt.show()
+
+def run_benchmark_noise_signal_channel(n,p, sig_noise, chan_noise):
+    all_avg_timesteps = []
+    for c in range(n-1):
+        total_timesteps = 0
+        for j in range(100):
+            sim = Simulator(n, .5, c+1, n, channel_noise = chan_noise)
+            timesteps, strategies = sim.run_convergence()
+            total_timesteps += timesteps
+        avg_timesteps = total_timesteps/100.
+        print "c = ", c
+        print "timesteps = ",avg_timesteps
+        all_avg_timesteps.append(avg_timesteps)
+    k = range(1,n)
+    print "k:"
+    print k
+    print "timesteps:"
+    print all_avg_timesteps
+    plt.plot(k, all_avg_timesteps)
+    plt.show()
+
+def run_benchmark_optimal_probability():
+    all_avg_timesteps = []
+    probs = range(1,100)
+    probs = [x/100. for x in probs]
+    for p in probs:
+        total_timesteps = 0
+        for j in range(100):
+            sim = Simulator(8, p, 8, 8)
+            timesteps, strategies = sim.run_convergence()
+            total_timesteps += timesteps
+        avg_timesteps = total_timesteps/100.
+        print "p = ", p
+        print "timesteps = ",avg_timesteps
+        all_avg_timesteps.append(avg_timesteps)
+    print "timesteps:"
+    print all_avg_timesteps
+    plt.plot(probs, all_avg_timesteps)
+    plt.show()
+
+run_benchmark_optimal_probability()
