@@ -323,6 +323,7 @@ class Simulator(object):
                 break
         return self.results
 
+
     def run_shrinking_population_with_results(self, num_agents_final, greedy = True):
         self.results = []
         timestep = 0
@@ -368,70 +369,6 @@ def run_benchmark1(n,p):
     print all_avg_timesteps
     plt.plot(k, all_avg_timesteps)
     plt.show()
-
-def run_benchmark_noise_signal(n,p, sig_noise):
-    all_avg_timesteps = []
-    for c in range(n-1):
-        total_timesteps = 0
-        for j in range(100):
-            sim = Simulator(n, .5, c+1, n, signal_noise = sig_noise)
-            timesteps, strategies = sim.run_convergence()
-            total_timesteps += timesteps
-        avg_timesteps = total_timesteps/100.
-        print "c = ", c
-        print "timesteps = ",avg_timesteps
-        all_avg_timesteps.append(avg_timesteps)
-    k = range(1,n)
-    print "k:"
-    print k
-    print "timesteps:"
-    print all_avg_timesteps
-    plt.plot(k, all_avg_timesteps)
-    plt.show()
-
-def run_benchmark_noise_channel(n,p, chan_noise):
-    all_avg_timesteps = []
-    for c in range(n-1):
-        total_timesteps = 0
-        for j in range(100):
-            sim = Simulator(n, .5, c+1, n, channel_noise = chan_noise)
-            timesteps, strategies = sim.run_convergence()
-            total_timesteps += timesteps
-        avg_timesteps = total_timesteps/100.
-        print "c = ", c
-        print "timesteps = ",avg_timesteps
-        all_avg_timesteps.append(avg_timesteps)
-    k = range(1,n)
-    print "k:"
-    print k
-    print "timesteps:"
-    print all_avg_timesteps
-    plt.plot(k, all_avg_timesteps)
-    plt.show()
-
-def run_benchmark_noise_signal_channel(n,p, sig_noise, chan_noise):
-    all_avg_timesteps = []
-    for c in range(n-1):
-        total_timesteps = 0
-        for j in range(100):
-            sim = Simulator(n, .5, c+1, n, channel_noise = chan_noise)
-            timesteps, strategies = sim.run_convergence()
-            total_timesteps += timesteps
-        avg_timesteps = total_timesteps/100.
-        print "c = ", c
-        print "timesteps = ",avg_timesteps
-        all_avg_timesteps.append(avg_timesteps)
-    k = range(1,n)
-    print "k:"
-    print k
-    print "timesteps:"
-    print all_avg_timesteps
-    plt.plot(k, all_avg_timesteps)
-    plt.show()
-
-# run_benchmark_noise_signal_channel(8,.5,0.01,.01)
-
-
 
 #Benchmark 2 (fig. 2 = avg # of steps to convergence for various values of k)
 #n = 64, c = n/2, p = .5
@@ -530,4 +467,112 @@ def run_fairness_benchmark2():
 #Improving performance by tuning probability for 8 channels and various signals
 
 
-    
+def run_benchmark_noise_signal(n,p, sig_noise):
+    all_avg_timesteps = []
+    for c in range(n-1):
+        total_timesteps = 0
+        for j in range(100):
+            sim = Simulator(n, .5, c+1, n, signal_noise = sig_noise)
+            timesteps, strategies = sim.run_convergence()
+            total_timesteps += timesteps
+        avg_timesteps = total_timesteps/100.
+        print "c = ", c
+        print "timesteps = ",avg_timesteps
+        all_avg_timesteps.append(avg_timesteps)
+    k = range(1,n)
+    print "k:"
+    print k
+    print "timesteps:"
+    print all_avg_timesteps
+    plt.plot(k, all_avg_timesteps)
+    plt.show()
+
+def run_benchmark_noise_channel(n,p, chan_noise):
+    all_avg_timesteps = []
+    for c in range(n-1):
+        total_timesteps = 0
+        for j in range(100):
+            sim = Simulator(n, .5, c+1, n, channel_noise = chan_noise)
+            timesteps, strategies = sim.run_convergence()
+            total_timesteps += timesteps
+        avg_timesteps = total_timesteps/100.
+        print "c = ", c
+        print "timesteps = ",avg_timesteps
+        all_avg_timesteps.append(avg_timesteps)
+    k = range(1,n)
+    print "k:"
+    print k
+    print "timesteps:"
+    print all_avg_timesteps
+    plt.plot(k, all_avg_timesteps)
+    plt.show()
+
+def run_benchmark_noise_signal_channel(n,p, sig_noise, chan_noise):
+    all_avg_timesteps = []
+    for c in range(n-1):
+        total_timesteps = 0
+        for j in range(100):
+            sim = Simulator(n, .5, c+1, n, channel_noise = chan_noise)
+            timesteps, strategies = sim.run_convergence()
+            total_timesteps += timesteps
+        avg_timesteps = total_timesteps/100.
+        print "c = ", c
+        print "timesteps = ",avg_timesteps
+        all_avg_timesteps.append(avg_timesteps)
+    k = range(1,n)
+    print "k:"
+    print k
+    print "timesteps:"
+    print all_avg_timesteps
+    plt.plot(k, all_avg_timesteps)
+    plt.show()
+
+def run_benchmark_optimal_probability():
+    all_avg_timesteps = []
+    probs = range(1,100)
+    probs = [x/100. for x in probs]
+    for p in probs:
+        total_timesteps = 0
+        for j in range(100):
+            sim = Simulator(8, p, 8, 8)
+            timesteps, strategies = sim.run_convergence()
+            total_timesteps += timesteps
+        avg_timesteps = total_timesteps/100.
+        print "p = ", p
+        print "timesteps = ",avg_timesteps
+        all_avg_timesteps.append(avg_timesteps)
+    print "timesteps:"
+    print all_avg_timesteps
+    plt.plot(probs, all_avg_timesteps)
+    plt.show()
+
+#run_benchmark_optimal_probability()
+
+def run_growing_shrinking_time_between_convergence():
+    total_cycle_time = 0
+    for n in range(1,8):
+        for j in range(1000):
+            sim = Simulator(n, .5, 8, 8)
+            results = sim.run_growing_population_with_results(n+1, greedy = True)
+            sep = None
+            for i,x in enumerate(results):
+                if x == ["I"]:
+                    sep = i
+            total_cycle_time += len(results) - sep
+    avg_cycle_time = total_cycle_time/7000.
+    print avg_cycle_time
+
+    total_cycle_time = 0
+    for n in range(2,9):
+        for j in range(1000):
+            sim = Simulator(n, .5, 8, 8)
+            results = sim.run_shrinking_population_with_results(n-1, greedy = True)
+            sep = None
+            for i,x in enumerate(results):
+                if x == ["D"]:
+                    sep = i
+            total_cycle_time += len(results) - sep
+    avg_cycle_time = total_cycle_time/7000.
+    print avg_cycle_time
+run_growing_shrinking_time_between_convergence()
+
