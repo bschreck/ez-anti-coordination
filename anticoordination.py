@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
-from matplotlib.legend_handler import HandlerLine2D
+# import matplotlib.pyplot as plt
+# from matplotlib.legend_handler import HandlerLine2D
 import math
 import random
 import numpy as np
@@ -263,6 +263,7 @@ class Simulator(object):
                 break
         return timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
 
+        # Methods for communicating w/ Arduino
     def run_convergence_with_results(self):
         #this is the main function that runs the simulator until it converges
         self.results = []
@@ -283,6 +284,19 @@ class Simulator(object):
         print self.results
         return self.results
 
+    def run_num_steps_with_results(self, num_steps):
+        signals_converged = [0]*self.k
+        timestep = 0
+
+        while (timestep < num_steps):
+            timestep += 1
+            signal = self.signals.value()
+            list_timestep = [signal]+[agent.strategy[signal] for agent in self.agents]
+            self.results.append(list_timestep)
+            self.timestep(signal, timestep)
+
+        return self.results
+
     def run_growing_population_with_results(self, num_agents_final, greedy = True):
         self.results = []
         timestep = 0
@@ -298,7 +312,7 @@ class Simulator(object):
                 converged = self.timestep(signal, timestep)
 
                 signals_converged[signal] = converged
-
+               
 
             if (not self.num_agents() == num_agents_final):
                 new_agent = Agent(self.p, self.k, self.c);
@@ -355,9 +369,6 @@ def run_benchmark1(n,p):
     print all_avg_timesteps
     plt.plot(k, all_avg_timesteps)
     plt.show()
-
-
-
 
 #Benchmark 2 (fig. 2 = avg # of steps to convergence for various values of k)
 #n = 64, c = n/2, p = .5
@@ -564,3 +575,4 @@ def run_growing_shrinking_time_between_convergence():
     avg_cycle_time = total_cycle_time/7000.
     print avg_cycle_time
 run_growing_shrinking_time_between_convergence()
+
