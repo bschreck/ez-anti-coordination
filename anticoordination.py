@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
-from matplotlib.legend_handler import HandlerLine2D
+# import matplotlib.pyplot as plt
+# from matplotlib.legend_handler import HandlerLine2D
 import math
 import random
 import numpy as np
@@ -263,6 +263,7 @@ class Simulator(object):
                 break
         return timestep, ["agent %s strategy = %s" % (i, agent.strategy) for i,agent in enumerate(self.agents)]
 
+        # Methods for communicating w/ Arduino
     def run_convergence_with_results(self):
         #this is the main function that runs the simulator until it converges
         self.results = []
@@ -283,6 +284,19 @@ class Simulator(object):
         print self.results
         return self.results
 
+    def run_num_steps_with_results(self, num_steps):
+        signals_converged = [0]*self.k
+        timestep = 0
+
+        while (timestep < num_steps):
+            timestep += 1
+            signal = self.signals.value()
+            list_timestep = [signal]+[agent.strategy[signal] for agent in self.agents]
+            self.results.append(list_timestep)
+            self.timestep(signal, timestep)
+
+        return self.results
+
     def run_growing_population_with_results(self, num_agents_final, greedy = True):
         self.results = []
         timestep = 0
@@ -298,7 +312,7 @@ class Simulator(object):
                 converged = self.timestep(signal, timestep)
 
                 signals_converged[signal] = converged
-
+               
 
             if (not self.num_agents() == num_agents_final):
                 new_agent = Agent(self.p, self.k, self.c);
@@ -415,7 +429,7 @@ def run_benchmark_noise_signal_channel(n,p, sig_noise, chan_noise):
     plt.plot(k, all_avg_timesteps)
     plt.show()
 
-run_benchmark_noise_signal_channel(8,.5,0.01,.01)
+# run_benchmark_noise_signal_channel(8,.5,0.01,.01)
 
 
 
@@ -514,3 +528,6 @@ def run_fairness_benchmark2():
 #Noisy channel reads/writes
 
 #Improving performance by tuning probability for 8 channels and various signals
+
+
+    

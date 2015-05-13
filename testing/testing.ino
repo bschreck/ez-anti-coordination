@@ -15,10 +15,10 @@ void setup() {
   colors[0] = strip.Color(255,0,0);
   colors[1] = strip.Color(255,255,0);
   colors[2] = strip.Color(0,255,0);
-  colors[3] = strip.Color(0,255,255);
+  colors[3] = strip.Color(0,200,80);
   colors[4] = strip.Color(0,0,255);
-  colors[5] = strip.Color(255,0,255);
-  strip.setBrightness(8);
+  colors[5] = strip.Color(255,0,120);
+  strip.setBrightness(64);
   
 }
 
