@@ -1,5 +1,5 @@
-# import matplotlib.pyplot as plt
-# from matplotlib.legend_handler import HandlerLine2D
+import matplotlib.pyplot as plt
+from matplotlib.legend_handler import HandlerLine2D
 import math
 import random
 import numpy as np
@@ -312,7 +312,7 @@ class Simulator(object):
                 converged = self.timestep(signal, timestep)
 
                 signals_converged[signal] = converged
-               
+
 
             if (not self.num_agents() == num_agents_final):
                 new_agent = Agent(self.p, self.k, self.c);
@@ -574,5 +574,4 @@ def run_growing_shrinking_time_between_convergence():
             total_cycle_time += len(results) - sep
     avg_cycle_time = total_cycle_time/7000.
     print avg_cycle_time
-run_growing_shrinking_time_between_convergence()
-
+#run_growing_shrinking_time_between_convergence()
